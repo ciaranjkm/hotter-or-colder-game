@@ -65,7 +65,7 @@ def populateSetButton(c = countryClass, b = Canvas):
     textRight = location + "\n"
         
     gis = GoogleImagesSearch(os.getenv('google_api'), os.getenv('google_cx'))
-    locationToSearch = c.location 
+    locationToSearch = c.location + "flag"
     searchParam = {
         'q' : locationToSearch,
         'num' : 1,
