@@ -1,8 +1,4 @@
-# game will get two random locations.
-# one is revealed (temperature).
-# guess if the second location is warmer or colder.
-# if correct another random location and compare to locatiion two.
-
+#add error checking for API requests
 import requests
 import os
 import random
@@ -10,14 +6,14 @@ from dotenv import load_dotenv
 from google_images_search import GoogleImagesSearch
 from io import BytesIO
 from tkinter import *
-from tkinter import ttk, font
+from tkinter import ttk, font, messagebox
 from PIL import Image, ImageTk, ImageOps
 
 #global
 file = open("PROGRAM/countries.txt").readlines()
 c1Image = ImageTk.PhotoImage
 turn = 0
-countriesToCompare = []
+countriesToCompare = [NONE]*2
 load_dotenv()
 
 #functions and classes
@@ -79,9 +75,8 @@ def populateSetButton(c = countryClass, b = Canvas):
     image = gis.results()[0]
     my_bytes_io.seek(0)
     image.copy_to(my_bytes_io)
-    temp = Image.open(my_bytes_io).resize((150,150))
 
-    t1 = ImageTk.PhotoImage(temp)
+    t1 = ImageTk.PhotoImage(Image.open(my_bytes_io).resize((150,150)))
     
     if c.isLeft == True:
         b.configure(image=t1, text=textLeft)
@@ -89,46 +84,96 @@ def populateSetButton(c = countryClass, b = Canvas):
     else:
         b.configure(image=t1, text=textRight)
         b.photo = t1
-    
-#initialise tkinter
-root = Tk()
-root.resizable(width=False, height=False)
-frm = ttk.Frame(root, padding=20)
-frm.grid(column=0, row=0, columnspan=2)
-frm.grid(column=1, row=0, columnspan=2)
-frm.grid(column=2, row=0, columnspan=2)
-
-countryOneButtonText = StringVar()
-countryTwoButtonText = StringVar()
-
-countryOneButton = Button(frm, fg="white", width=200, height=200, bd=5, compound=TOP, disabledforeground="white", state=DISABLED)
-countryTwoButton = Button(frm, fg="white", width=200, height=200, bd=5, compound=TOP, disabledforeground="white", state=DISABLED)
-
-optionsButton = Button(frm, text="Options")
-quitButton = Button(frm,text="Quit", command=root.destroy)
-
-higherButton = Button(frm, text="Higher")
-lowerButton = Button(frm, text="lower")
-
-countryOneButton.grid(column=0, row=0, padx=5)
-countryTwoButton.grid(column=1, row=0, padx=5)
-
-optionsButton.grid(column=2, row=0)
-quitButton.grid(column=2, row=0)    
-
-
-#game logic
-if turn == 0:
-    c1 = getRandomCountry()
-    c1.isLeft = True
-    c2 = getRandomCountry()
         
-    countriesToCompare.append(c1)
-    countriesToCompare.append(c2)
+#onclick functions for game logic    
+def onClickHigher():
+    if countriesToCompare[0].temperature < countriesToCompare[1].temperature:
+        print("onClickHigher...")
+        
+        countriesToCompare[0] = countriesToCompare[1]
+        countriesToCompare[1] = getRandomCountry()
+        countriesToCompare[0].isLeft = True
+        
+        populateSetButton(countriesToCompare[0], countryOneButton)
+        populateSetButton(countriesToCompare[1], countryTwoButton)
+               
+        print("done")
+        global turn 
+        turn = turn + 1
+        score.config(text="Score: " + str(turn))
+    else:
+        text = "Game Over! You scored " + str(turn) + "!\nPress 'OK' to restart."
+        messagebox.showinfo("GAME OVER!", text)
+        turn = 0
+        start()
+        
+def onClickLower():
+    if countriesToCompare[0].temperature > countriesToCompare[1].temperature:
+        print("onClickLower...")
+    
+        countriesToCompare[0] = countriesToCompare[1]
+        countriesToCompare[1] = getRandomCountry()
+        countriesToCompare[0].isLeft = True
+        
+        populateSetButton(countriesToCompare[0], countryOneButton)
+        populateSetButton(countriesToCompare[1], countryTwoButton)
+               
+        print("done")
+        global turn 
+        turn = turn + 1
+        score.config(text="Score: " + str(turn))
+    else:
+        text = "Game Over! You scored " + str(turn) + "!\nPress 'OK' to restart."
+        messagebox.showinfo("GAME OVER!", text)
+        turn = 0
+        start()
+        
+#function to restart game.
+def start():
+    countriesToCompare[0] = getRandomCountry()
+    countriesToCompare[0].isLeft = True
+    countriesToCompare[1] = getRandomCountry()
     
     populateSetButton(countriesToCompare[0], countryOneButton)
     populateSetButton(countriesToCompare[1], countryTwoButton)
     
+    score.config(text="Score: " + str(turn))
+      
+        
+#initialise tkinter
+root = Tk()
+root.resizable(width=False, height=False)
+root.title("Hotter or Colder Game!")
+frm = ttk.Frame(root, padding=5)
+
+#row/column spans
+frm.grid(column=0, row=0, rowspan=4)
+frm.grid(column=1, row=0, rowspan=4)
+frm.grid(column=0, row=0, columnspan=2)
+
+#widgets topLeft -> bottomRight
+title = Label(frm, text="Hotter or Colder!", font=('Arial', 24))
+score = Label(frm, text=("Score: " + str(turn)), font=('Arial', 16))
+#buttons lol
+countryOneButton = Button(frm, fg="white", width=200, height=200, bd=5, compound=TOP, disabledforeground="white", state=DISABLED)
+countryTwoButton = Button(frm, fg="white", width=200, height=200, bd=5, compound=TOP, disabledforeground="white", state=DISABLED)
+
+higherButton = Button(frm, text="Warmer", command=onClickHigher)
+lowerButton = Button(frm, text="Colder", command = onClickLower)
+quitButton = Button(frm ,text="Quit", command=root.destroy)
+
+#grid organisation
+title.grid(column=0, row=0)
+score.grid(column=2, row=0)
+
+countryOneButton.grid(column=0, row=1, rowspan=4)
+countryTwoButton.grid(column=1, row=1, rowspan=4)
+
+higherButton.grid(column=2, row=1, pady=5, sticky=S)
+lowerButton.grid(column=2, row=2, pady=5, sticky=N)
+quitButton.grid(column=2, row=4, pady=5)    
+
+start()
 frm.mainloop()
 
 
